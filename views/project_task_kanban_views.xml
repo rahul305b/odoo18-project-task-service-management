@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ================================================================
+         PART 5, item 10: compact time indicator on the task Kanban
+         card. Uses the hasclass() xpath helper (an Odoo-specific
+         extension for view-inheritance matching) to target the card's
+         root record div without depending on the internal template
+         structure staying identical release to release.
+
+         Kept deliberately small: three short lines, no extra styling
+         beyond muted/colored text, so the card is not overcrowded.
+         Field values are fetched via the top-level <field> declarations
+         (required so the kanban record has the data available to
+         render), then displayed inside the template body.
+         ================================================================ -->
+    <record id="view_task_kanban_time_analysis" model="ir.ui.view">
+        <field name="name">project.task.kanban.time.analysis</field>
+        <field name="model">project.task</field>
+        <field name="inherit_id" ref="project.view_task_kanban"/>
+        <field name="arch" type="xml">
+            <field name="stage_id" position="after">
+                <field name="estimated_time"/>
+                <field name="actual_work_hours"/>
+                <field name="variance_to_finish"/>
+            </field>
+            <xpath expr="//div[hasclass('o_kanban_record')]" position="inside">
+                <div class="o_project_task_time_analysis text-muted"
+                     style="font-size: 11px; margin-top: 2px;"
+                     t-if="record.estimated_time.raw_value">
+                    <span>Est: <field name="estimated_time" widget="float_time"/></span>
+                    <span class="ms-2">Act: <field name="actual_work_hours" widget="float_time"/></span>
+                    <span t-attf-class="ms-2 {{ 'text-danger' if record.variance_to_finish.raw_value &lt; 0 else 'text-success' }}">
+                        Var: <field name="variance_to_finish" widget="float_time"/>
+                    </span>
+                </div>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

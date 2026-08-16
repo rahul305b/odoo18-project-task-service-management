@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!--
+        PART 4 security note (updated in PART 11 - see below):
+
+        Project Users now have model-level write/create access to
+        project.task.work.session (needed for action_start_work /
+        action_pause_work / action_resume_work, which run as the
+        logged-in user, not sudo). Without a record rule, that access
+        would be model-wide - i.e. an employee could open the Work
+        Session list/form directly and edit or create a session
+        belonging to a *different* employee, which the Part 4 spec
+        explicitly forbids ("Employee must not be able to manipulate
+        another employee's Work Session through the UI").
+
+        PART 11 FIX: this rule originally restricted write/create only
+        (perm_read was False, meaning it didn't participate in read
+        checks at all) - Part 4/9's own notes flagged this explicitly
+        as "read access remains unrestricted for this group" and
+        deferred tightening it. Part 11's security audit (item 34:
+        "no overly broad rule accidentally gives employees access to
+        ...all Work Sessions") is exactly that deferred item coming
+        due, so perm_read is now also True on this rule: a normal
+        Project User can only read/write/create sessions where
+        employee_id is their own - matching "Employee: view their OWN
+        work sessions" (Part 10, item 4) precisely. Company-wide
+        read of every employee's individual time-tracking data is no
+        longer implicitly granted.
+
+        Note: Odoo's standard project.group_project_manager typically
+        implies project.group_project_user, so managers are usually
+        also covered by this same "own sessions only" restriction for
+        write/create - that write/create restriction is intentional
+        and unchanged (managers still don't get free write access to
+        other employees' sessions - manual time editing was never
+        implemented). READ is different: managers legitimately need to
+        see their team's Work Sessions (dashboard, verification
+        review, etc), so a separate unrestricted-READ rule for
+        project.group_project_manager is added below specifically to
+        restore that, without reopening write/create.
+    -->
+    <record id="project_task_work_session_rule_employee_own_write" model="ir.rule">
+        <field name="name">Work Session: users can only read/write/create their own sessions (Project Users, incl. Managers by implied group)</field>
+        <field name="model_id" ref="model_project_task_work_session"/>
+        <field name="domain_force">[('employee_id.user_id', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('project.group_project_user'))]"/>
+        <field name="perm_read">True</field>
+        <field name="perm_write">True</field>
+        <field name="perm_create">True</field>
+        <field name="perm_unlink">False</field>
+    </record>
+
+    <!--
+        PART 11 addition: restores unrestricted READ (only) for
+        Project Managers, who are also members of project.group_
+        project_user via implication and would otherwise be caught by
+        the "own sessions only" rule above for read too. Write/create
+        remain governed by that same rule (still own-sessions-only for
+        managers - unchanged from Part 4, manual editing of other
+        employees' sessions is still not implemented anywhere).
+    -->
+    <record id="project_task_work_session_rule_manager_unrestricted_read" model="ir.rule">
+        <field name="name">Work Session: Project Managers can read all sessions</field>
+        <field name="model_id" ref="model_project_task_work_session"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('project.group_project_manager'))]"/>
+        <field name="perm_read">True</field>
+        <field name="perm_write">False</field>
+        <field name="perm_create">False</field>
+        <field name="perm_unlink">False</field>
+    </record>
+
+    <!--
+        Administrators are very often also members of
+        project.group_project_user (implied via the Project "manager"
+        access level). Without this second rule, an Administrator
+        would be caught by the restrictive rule above through that
+        group membership. Odoo ORs together the rules that apply to a
+        user via their different groups, so adding this unrestricted
+        rule for base.group_system restores full read/write/create
+        access for Administrators specifically, consistent with the
+        "full access" behaviour already granted in ir.model.access.csv.
+    -->
+    <record id="project_task_work_session_rule_admin_unrestricted_write" model="ir.rule">
+        <field name="name">Work Session: Administrators are not restricted to their own sessions</field>
+        <field name="model_id" ref="model_project_task_work_session"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('base.group_system'))]"/>
+        <field name="perm_read">True</field>
+        <field name="perm_write">True</field>
+        <field name="perm_create">True</field>
+        <field name="perm_unlink">True</field>
+    </record>
+
+</odoo>

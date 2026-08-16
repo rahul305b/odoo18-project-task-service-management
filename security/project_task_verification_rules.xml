@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!--
+        Defense-in-depth, mirroring the Part 4 work-session rule
+        pattern: action_submit_for_verification() already validates
+        assignment/employee-linkage in Python before creating a
+        project.task.verification record, but without a record rule
+        the model-level create=1 granted to Project Users in
+        ir.model.access.csv would still let an employee create a
+        verification record with an arbitrary submitted_by via direct
+        API/RPC calls, bypassing that Python validation entirely. This
+        rule closes that gap by restricting Project Users to only ever
+        creating records where submitted_by is themselves.
+
+        Read access remains unrestricted for this group (managers and
+        employees can both see full verification history - the spec's
+        Verification History tab is meant to be visible to whoever can
+        already see the task). Write is not granted to Project Users
+        at all in ir.model.access.csv, so there is nothing to restrict
+        there. Unlink is off entirely for this group.
+    -->
+    <record id="project_task_verification_rule_employee_own_create" model="ir.rule">
+        <field name="name">Verification: employees can only create their own submissions</field>
+        <field name="model_id" ref="model_project_task_verification"/>
+        <field name="domain_force">[('submitted_by', '=', user.id)]</field>
+        <field name="groups" eval="[(4, ref('project.group_project_user'))]"/>
+        <field name="perm_read">False</field>
+        <field name="perm_write">False</field>
+        <field name="perm_create">True</field>
+        <field name="perm_unlink">False</field>
+    </record>
+
+    <!--
+        Same reasoning as the equivalent rule in
+        project_task_work_session_rules.xml: Administrators are often
+        also members of project.group_project_user (implied via the
+        Project "manager" access level), so without this second,
+        unrestricted rule they would be caught by the restrictive rule
+        above through that group membership.
+    -->
+    <record id="project_task_verification_rule_admin_unrestricted" model="ir.rule">
+        <field name="name">Verification: Administrators are not restricted</field>
+        <field name="model_id" ref="model_project_task_verification"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('base.group_system'))]"/>
+        <field name="perm_read">True</field>
+        <field name="perm_write">True</field>
+        <field name="perm_create">True</field>
+        <field name="perm_unlink">True</field>
+    </record>
+
+</odoo>

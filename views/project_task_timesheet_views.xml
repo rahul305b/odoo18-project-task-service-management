@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ================================================================
+         PART 5, item 7: show the Time Analysis summary at the top of
+         the existing Timesheets tab, above the existing timesheet
+         line entries. This inherits hr_timesheet's own inherited view
+         (not project.view_task_form2 directly), because that is
+         where the Timesheets tab and its timesheet_ids field actually
+         live - project.view_task_form2 alone has no Timesheets page.
+
+         Targeting "before" the timesheet_ids field (rather than a
+         specific page name, which can vary) keeps this resilient: it
+         only requires that a field called timesheet_ids exists
+         somewhere in the inherited arch, which is guaranteed by
+         hr_timesheet itself.
+
+         Existing timesheet lines (Date / Employee / Description /
+         Time Spent) are completely untouched - nothing is removed or
+         replaced, only a summary is added above them.
+         ================================================================ -->
+    <record id="view_task_form2_timesheet_time_summary" model="ir.ui.view">
+        <field name="name">project.task.form.timesheet.time.summary</field>
+        <field name="model">project.task</field>
+        <field name="inherit_id" ref="hr_timesheet.view_task_form2_inherited"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='timesheet_ids']" position="before">
+                <separator string="Time Summary"/>
+                <group>
+                    <group>
+                        <field name="estimated_time" widget="float_time" string="Estimated Time"/>
+                        <field name="actual_work_hours" widget="float_time" string="Actual Time"/>
+                    </group>
+                    <group>
+                        <field name="variance_to_finish" widget="float_time"
+                               string="Variance to Finish"
+                               decoration-success="variance_to_finish > 0"
+                               decoration-danger="variance_to_finish &lt; 0"/>
+                        <field name="remaining_estimated_hours" widget="float_time"
+                               string="Remaining Time"/>
+                        <field name="overrun_hours" widget="float_time"
+                               string="Overrun"
+                               decoration-danger="overrun_hours > 0"/>
+                    </group>
+                </group>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

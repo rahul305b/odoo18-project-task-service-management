@@ -1,0 +1,12 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_project_task_work_session_project_user,project.task.work.session.project.user,model_project_task_work_session,project.group_project_user,1,1,1,0
+access_project_task_work_session_project_manager,project.task.work.session.project.manager,model_project_task_work_session,project.group_project_manager,1,1,1,0
+access_project_task_work_session_system,project.task.work.session.system,model_project_task_work_session,base.group_system,1,1,1,1
+access_project_task_verification_project_user,project.task.verification.project.user,model_project_task_verification,project.group_project_user,1,0,1,0
+access_project_task_verification_project_manager,project.task.verification.project.manager,model_project_task_verification,project.group_project_manager,1,1,1,0
+access_project_task_verification_system,project.task.verification.system,model_project_task_verification,base.group_system,1,1,1,1
+access_project_task_transfer_project_user,project.task.transfer.project.user,model_project_task_transfer,project.group_project_user,1,0,0,0
+access_project_task_transfer_project_manager,project.task.transfer.project.manager,model_project_task_transfer,project.group_project_manager,1,0,1,0
+access_project_task_transfer_system,project.task.transfer.system,model_project_task_transfer,base.group_system,1,1,1,1
+access_project_task_transfer_wizard_project_manager,project.task.transfer.wizard.project.manager,model_project_task_transfer_wizard,project.group_project_manager,1,1,1,1
+access_project_task_transfer_wizard_system,project.task.transfer.wizard.system,model_project_task_transfer_wizard,base.group_system,1,1,1,1

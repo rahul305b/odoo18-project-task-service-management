@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ================================================================
+         PART 9: Server actions. Each dashboard section needs a domain
+         computed per-user (project-specific scoping, see
+         _get_dashboard_domain_for_current_user in the model files),
+         so a plain static ir.actions.act_window record can't express
+         it - these thin server actions call the model method and
+         return its result, which IS the standard Odoo pattern for a
+         "compute the action dynamically" menu entry.
+         ================================================================ -->
+    <record id="action_server_task_performance" model="ir.actions.server">
+        <field name="name">Task Performance</field>
+        <field name="model_id" ref="project.model_project_task"/>
+        <field name="state">code</field>
+        <field name="code">action = model.action_open_task_performance()</field>
+    </record>
+
+    <record id="action_server_pending_verification" model="ir.actions.server">
+        <field name="name">Pending Manager Verification</field>
+        <field name="model_id" ref="project.model_project_task"/>
+        <field name="state">code</field>
+        <field name="code">action = model.action_open_pending_verification()</field>
+    </record>
+
+    <record id="action_server_overrun_tasks" model="ir.actions.server">
+        <field name="name">Tasks Over Estimate</field>
+        <field name="model_id" ref="project.model_project_task"/>
+        <field name="state">code</field>
+        <field name="code">action = model.action_open_overrun_tasks()</field>
+    </record>
+
+    <record id="action_server_billing_summary" model="ir.actions.server">
+        <field name="name">Billing Summary</field>
+        <field name="model_id" ref="project.model_project_task"/>
+        <field name="state">code</field>
+        <field name="code">action = model.action_open_billing_summary()</field>
+    </record>
+
+    <record id="action_server_work_session_report" model="ir.actions.server">
+        <field name="name">Work Session Report</field>
+        <field name="model_id" ref="model_project_task_work_session"/>
+        <field name="state">code</field>
+        <field name="code">action = model.action_open_work_session_report()</field>
+    </record>
+
+    <record id="action_server_currently_working" model="ir.actions.server">
+        <field name="name">Currently Working</field>
+        <field name="model_id" ref="model_project_task_work_session"/>
+        <field name="state">code</field>
+        <field name="code">action = model.action_open_currently_working()</field>
+    </record>
+
+    <record id="action_server_transfer_summary" model="ir.actions.server">
+        <field name="name">Transfer Summary</field>
+        <field name="model_id" ref="model_project_task_transfer"/>
+        <field name="state">code</field>
+        <field name="code">action = model.action_open_transfer_summary()</field>
+    </record>
+
+    <!-- ================================================================
+         Menus. Everything is gated to the "Project Task Service
+         Manager" group (Part 8) plus Administrators - never menu
+         visibility alone, since every one of the server actions above
+         also independently computes a project-scoped domain in
+         Python. A normal employee with neither group simply won't see
+         these menu items at all (item 1/28).
+
+         Placed under the existing self-contained "Service Task
+         Management" root menu (created in Part 3, alongside Work
+         Sessions) rather than a brand-new root, consistent with the
+         module's own established menu structure and avoiding a guess
+         at a core Project menu ID (see Part 3's notes on why that
+         root exists standalone in the first place).
+         ================================================================ -->
+    <menuitem id="menu_service_task_dashboard_root"
+              name="Service Task Dashboard"
+              parent="menu_project_task_service_management_root"
+              groups="project_task_service_management.group_project_task_service_manager,base.group_system"
+              sequence="5"/>
+
+    <menuitem id="menu_task_performance"
+              name="Task Performance"
+              parent="menu_service_task_dashboard_root"
+              action="action_server_task_performance"
+              sequence="10"/>
+
+    <menuitem id="menu_pending_verification"
+              name="Pending Manager Verification"
+              parent="menu_service_task_dashboard_root"
+              action="action_server_pending_verification"
+              sequence="20"/>
+
+    <menuitem id="menu_overrun_tasks"
+              name="Tasks Over Estimate"
+              parent="menu_service_task_dashboard_root"
+              action="action_server_overrun_tasks"
+              sequence="30"/>
+
+    <menuitem id="menu_billing_summary"
+              name="Billing Summary"
+              parent="menu_service_task_dashboard_root"
+              action="action_server_billing_summary"
+              sequence="40"/>
+
+    <menuitem id="menu_work_session_report"
+              name="Work Session Report"
+              parent="menu_service_task_dashboard_root"
+              action="action_server_work_session_report"
+              sequence="50"/>
+
+    <menuitem id="menu_currently_working"
+              name="Currently Working"
+              parent="menu_service_task_dashboard_root"
+              action="action_server_currently_working"
+              sequence="60"/>
+
+    <menuitem id="menu_transfer_summary"
+              name="Transfer Summary"
+              parent="menu_service_task_dashboard_root"
+              action="action_server_transfer_summary"
+              sequence="70"/>
+
+</odoo>

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!--
+        PART 10: a single shared activity type reused for every
+        notification kind this module sends (assignment, transfer,
+        verification submission, approval, rejection). Deliberately
+        NOT five separate custom activity types - the Part 10 spec
+        names "Task Assignment" as an example for one scenario, but
+        creating a parallel type per event would be exactly the kind
+        of "unnecessary duplicate" complexity the module has avoided
+        throughout (see e.g. Part 6's manager_remarks vs a hypothetical
+        approve_remarks/reject_remarks split). Each notification's
+        `summary` text (e.g. "New task assigned: ...", "Task
+        transferred to you: ...") is what actually distinguishes them
+        to the recipient in their Activities list - the activity TYPE
+        only needs to identify "this came from Service Task
+        Management", which one shared type does perfectly well.
+    -->
+    <record id="mail_activity_type_service_task_notification" model="mail.activity.type">
+        <field name="name">Service Task Notification</field>
+        <field name="category">default</field>
+        <field name="summary">Service Task Management</field>
+        <field name="delay_count">0</field>
+    </record>
+
+</odoo>

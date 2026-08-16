@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ================================================================
+         PART 8: Project Manager designation + optional project-level
+         billing defaults on the project form. Targets project.edit_project
+         (the standard project.project form view) and adds a new group
+         after the button box, rather than touching any existing field
+         group - low risk against whatever else may already customize
+         this form, and keeps all of Odoo's own Project fields
+         (Customer, existing Project Manager/user_id, etc.) untouched.
+         ================================================================ -->
+    <record id="view_project_form_service_management" model="ir.ui.view">
+        <field name="name">project.project.form.service.management</field>
+        <field name="model">project.project</field>
+        <field name="inherit_id" ref="project.edit_project"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[@name='button_box']" position="after">
+                <group string="Project Task Service Management">
+                    <group string="Project Manager" groups="base.group_system">
+                        <field name="project_manager_id"
+                               options="{'no_create': True}"/>
+                        <field name="project_manager_ids" widget="many2many_tags"
+                               options="{'no_create': True}"/>
+                    </group>
+                    <group string="Default Billing (Optional)">
+                        <field name="default_billing_mode"/>
+                        <field name="default_hourly_rate"
+                               invisible="default_billing_mode != 'hourly'"/>
+                        <field name="default_task_price"
+                               invisible="default_billing_mode != 'task'"/>
+                        <field name="currency_id" invisible="1"/>
+                    </group>
+                </group>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

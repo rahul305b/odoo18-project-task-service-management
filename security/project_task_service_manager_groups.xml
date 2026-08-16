@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!--
+        This group is a MARKER of "this person has been designated a
+        manager somewhere in our module" - it grants baseline ACL
+        access (via implied_ids, reusing Odoo's own standard Project
+        Manager group rather than duplicating a parallel set of access
+        rows) to see the models this module introduces: Work Sessions,
+        Verification, Transfer.
+
+        IMPORTANT - what this group does NOT do: it does not, by
+        itself, authorize a member to Approve/Reject/Transfer any
+        given task. That authorization is PROJECT-SPECIFIC and is
+        checked in Python at the moment of the action
+        (project.task._is_current_user_authorized_manager(), see
+        project_task.py) against that task's own project's
+        project_manager_id / project_manager_ids. Membership in this
+        group is a necessary baseline (and is auto-granted whenever an
+        Administrator sets someone as a project's manager - see
+        project_project.py's _grant_module_manager_group_to_project_managers),
+        but is not by itself sufficient for those actions on a project
+        the member wasn't actually assigned to manage.
+    -->
+    <record id="group_project_task_service_manager" model="res.groups">
+        <field name="name">Project Task Service Manager</field>
+        <field name="implied_ids" eval="[(4, ref('project.group_project_manager'))]"/>
+        <field name="comment">Employees designated as a Project Manager (primary or additional) on at least one project through this module's Project Manager field. Grants the baseline access this module's manager-facing features need (Work Sessions, Verification, Transfer). Does NOT by itself authorize managing any specific project - that is checked per-project at the moment of each action. Does NOT grant Odoo Administrator rights.</field>
+    </record>
+
+</odoo>

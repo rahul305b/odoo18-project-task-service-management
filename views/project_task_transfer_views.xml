@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ================================================================
+         PART 9: standalone list/search for project.task.transfer.
+         Part 7 only ever showed transfers embedded read-only inside a
+         task's own Transfer History tab - this is the first
+         cross-task reporting view for the model.
+         ================================================================ -->
+    <record id="view_project_task_transfer_list" model="ir.ui.view">
+        <field name="name">project.task.transfer.list</field>
+        <field name="model">project.task.transfer</field>
+        <field name="arch" type="xml">
+            <list string="Transfers" default_order="transferred_at desc" create="false" edit="false" delete="false">
+                <field name="task_id"/>
+                <field name="project_id"/>
+                <field name="partner_id" string="Customer"/>
+                <field name="from_employee_id"/>
+                <field name="to_employee_id"/>
+                <field name="transferred_by"/>
+                <field name="transferred_at"/>
+                <field name="reason_display" string="Reason"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_project_task_transfer_search" model="ir.ui.view">
+        <field name="name">project.task.transfer.search</field>
+        <field name="model">project.task.transfer</field>
+        <field name="arch" type="xml">
+            <search string="Search Transfers">
+                <field name="task_id"/>
+                <field name="project_id"/>
+                <field name="partner_id" string="Customer"/>
+                <field name="from_employee_id"/>
+                <field name="to_employee_id"/>
+
+                <filter string="Transferred At" name="filter_transferred_at"
+                        date="transferred_at"/>
+
+                <group expand="0" string="Group By">
+                    <filter string="Project" name="groupby_project"
+                            context="{'group_by': 'project_id'}"/>
+                    <filter string="Customer" name="groupby_customer"
+                            context="{'group_by': 'partner_id'}"/>
+                    <filter string="From Employee" name="groupby_from_employee"
+                            context="{'group_by': 'from_employee_id'}"/>
+                    <filter string="To Employee" name="groupby_to_employee"
+                            context="{'group_by': 'to_employee_id'}"/>
+                    <filter string="Transferred At" name="groupby_transferred_at"
+                            context="{'group_by': 'transferred_at:day'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+</odoo>

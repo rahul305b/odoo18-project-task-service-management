@@ -1,0 +1,212 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ================================================================
+         PART 9: Task Performance search view - the shared search/
+         filter panel for every dashboard action on project.task
+         (Task Performance, Pending Verification, Tasks Over Estimate,
+         Billing Summary). One search view, reused everywhere, so
+         Customer/Project/Employee/Status filters behave identically
+         across every dashboard section (item 30: filters must combine,
+         never silently override each other - a single shared search
+         view guarantees that by construction).
+
+         NOTE ON TASK CODE (item 9/33): this module has never inspected
+         the existing Task Code customization already present in this
+         database (every earlier part explicitly deferred that). Since
+         its actual field name is unknown, it is NOT referenced
+         anywhere in this file - doing so on a guess could break
+         install exactly as happened earlier in this build with an
+         unverified view/field reference. Once Task Code is formally
+         inspected/integrated, a column can be added safely.
+
+         NOTE ON EMPLOYEE FILTER: project.task has no direct hr.employee
+         field - only Assignees (user_ids, res.users). The Employee
+         filter below filters on user_ids directly, which in normal
+         use corresponds 1:1 with the working employee via
+         hr.employee.user_id (the same mapping used throughout this
+         module). A true hr.employee-typed filter would need a new
+         stored field purely for search purposes; not added here to
+         avoid an unrequested schema change for a cosmetic difference.
+         ================================================================ -->
+    <record id="view_task_performance_search" model="ir.ui.view">
+        <field name="name">project.task.performance.search</field>
+        <field name="model">project.task</field>
+        <field name="arch" type="xml">
+            <search string="Task Performance">
+                <field name="name" string="Task"/>
+                <field name="partner_id" string="Customer"/>
+                <field name="project_id"/>
+                <field name="user_ids" string="Employee"/>
+                <field name="stage_id"/>
+
+                <separator/>
+                <filter string="Not Started" name="filter_not_started"
+                        domain="[('verification_status', '=', 'not_started')]"/>
+                <filter string="In Progress" name="filter_in_progress"
+                        domain="[('verification_status', '=', 'in_progress')]"/>
+                <filter string="Waiting for Verification" name="filter_waiting"
+                        domain="[('verification_status', '=', 'waiting')]"/>
+                <filter string="Rejected" name="filter_rejected"
+                        domain="[('verification_status', '=', 'rejected')]"/>
+                <filter string="Approved / Done" name="filter_approved"
+                        domain="[('verification_status', '=', 'approved')]"/>
+
+                <separator/>
+                <filter string="Over Estimate" name="filter_over_estimate"
+                        domain="[('overrun_hours', '>', 0)]"/>
+                <filter string="Billable" name="filter_billable"
+                        domain="[('is_billable', '=', True)]"/>
+
+                <group expand="0" string="Group By">
+                    <filter string="Customer" name="groupby_customer"
+                            context="{'group_by': 'partner_id'}"/>
+                    <filter string="Project" name="groupby_project"
+                            context="{'group_by': 'project_id'}"/>
+                    <filter string="Verification Status" name="groupby_verification_status"
+                            context="{'group_by': 'verification_status'}"/>
+                    <filter string="Stage" name="groupby_stage"
+                            context="{'group_by': 'stage_id'}"/>
+                    <filter string="Billing Mode" name="groupby_billing_mode"
+                            context="{'group_by': 'billing_mode'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- ================================================================
+         Task Performance list - item 9's full column set, reusing
+         every field already computed in earlier parts.
+         ================================================================ -->
+    <record id="view_task_performance_list" model="ir.ui.view">
+        <field name="name">project.task.performance.list</field>
+        <field name="model">project.task</field>
+        <field name="arch" type="xml">
+            <list string="Task Performance" create="false" edit="false"
+                  default_order="overrun_hours desc">
+                <field name="partner_id" string="Customer"/>
+                <field name="project_id"/>
+                <field name="name" string="Task"/>
+                <field name="user_ids" string="Assignees" widget="many2many_tags"/>
+                <field name="estimated_time" widget="float_time" sum="Total"/>
+                <field name="actual_work_hours" widget="float_time" sum="Total"/>
+                <field name="variance_to_finish" widget="float_time" sum="Total"
+                       decoration-success="variance_to_finish > 0"
+                       decoration-danger="variance_to_finish &lt; 0"/>
+                <field name="remaining_estimated_hours" widget="float_time" optional="hide"/>
+                <field name="overrun_hours" widget="float_time" optional="hide"
+                       decoration-danger="overrun_hours > 0"/>
+                <field name="verification_status" widget="badge"/>
+                <field name="billing_mode" optional="hide"/>
+                <field name="billable_amount" sum="Total" optional="show"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ================================================================
+         Pivot - doubles as the KPI summary (see
+         action_open_task_performance's docstring): with no
+         row/column grouping applied, the pivot's own totals row is
+         effectively a KPI card row for Estimated/Actual/Variance/
+         Billable Amount, computed natively by the pivot view with no
+         extra code. Group by Customer or Project from here for the
+         item 15/16 summaries.
+         ================================================================ -->
+    <record id="view_task_performance_pivot" model="ir.ui.view">
+        <field name="name">project.task.performance.pivot</field>
+        <field name="model">project.task</field>
+        <field name="arch" type="xml">
+            <pivot string="Task Performance">
+                <field name="project_id" type="row"/>
+                <field name="estimated_time" type="measure" widget="float_time"/>
+                <field name="actual_work_hours" type="measure" widget="float_time"/>
+                <field name="variance_to_finish" type="measure" widget="float_time"/>
+                <field name="billable_amount" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <!-- ================================================================
+         Graph - item 26's recommended "Estimated vs Actual Hours by
+         Project".
+         ================================================================ -->
+    <record id="view_task_performance_graph" model="ir.ui.view">
+        <field name="name">project.task.performance.graph</field>
+        <field name="model">project.task</field>
+        <field name="arch" type="xml">
+            <graph string="Estimated vs Actual Hours by Project" type="bar">
+                <field name="project_id" type="row"/>
+                <field name="estimated_time" type="measure"/>
+                <field name="actual_work_hours" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <!-- ================================================================
+         Pending Manager Verification - item 12's exact column set.
+         ================================================================ -->
+    <record id="view_task_pending_verification_list" model="ir.ui.view">
+        <field name="name">project.task.pending.verification.list</field>
+        <field name="model">project.task</field>
+        <field name="arch" type="xml">
+            <list string="Pending Manager Verification" create="false" edit="false"
+                  default_order="submitted_on asc">
+                <field name="name" string="Task"/>
+                <field name="partner_id" string="Customer"/>
+                <field name="project_id"/>
+                <field name="user_ids" string="Employee" widget="many2many_tags"/>
+                <field name="submitted_by"/>
+                <field name="submitted_on"/>
+                <field name="actual_work_hours" widget="float_time"/>
+                <field name="estimated_time" widget="float_time"/>
+                <field name="variance_to_finish" widget="float_time"
+                       decoration-success="variance_to_finish > 0"
+                       decoration-danger="variance_to_finish &lt; 0"/>
+                <field name="employee_remarks"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ================================================================
+         Tasks Over Estimate - item 11's column set, sorted by overrun.
+         ================================================================ -->
+    <record id="view_task_overrun_list" model="ir.ui.view">
+        <field name="name">project.task.overrun.list</field>
+        <field name="model">project.task</field>
+        <field name="arch" type="xml">
+            <list string="Tasks Over Estimate" create="false" edit="false"
+                  default_order="overrun_hours desc">
+                <field name="name" string="Task"/>
+                <field name="project_id"/>
+                <field name="partner_id" string="Customer"/>
+                <field name="estimated_time" widget="float_time"/>
+                <field name="actual_work_hours" widget="float_time"/>
+                <field name="overrun_hours" widget="float_time"
+                       decoration-danger="overrun_hours > 0"/>
+                <field name="user_ids" string="Employee" widget="many2many_tags"/>
+                <field name="verification_status" widget="badge"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ================================================================
+         Billing Summary - item 17's column set.
+         ================================================================ -->
+    <record id="view_task_billing_summary_list" model="ir.ui.view">
+        <field name="name">project.task.billing.summary.list</field>
+        <field name="model">project.task</field>
+        <field name="arch" type="xml">
+            <list string="Billing Summary" create="false" edit="false"
+                  default_order="partner_id">
+                <field name="partner_id" string="Customer"/>
+                <field name="project_id"/>
+                <field name="name" string="Task"/>
+                <field name="billing_mode"/>
+                <field name="billable_hours" widget="float_time" string="Actual Billable Hours"/>
+                <field name="billable_amount" sum="Total"/>
+                <field name="verification_status" widget="badge" string="Task Status"/>
+            </list>
+        </field>
+    </record>
+
+</odoo>

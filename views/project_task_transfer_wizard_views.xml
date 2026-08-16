@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_project_task_transfer_wizard_form" model="ir.ui.view">
+        <field name="name">project.task.transfer.wizard.form</field>
+        <field name="model">project.task.transfer.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Transfer Task">
+                <field name="assigned_employee_ids" invisible="1"/>
+                <group>
+                    <field name="task_id" readonly="1"/>
+                </group>
+                <group>
+                    <group>
+                        <field name="from_employee_id"
+                               string="Current Employee"
+                               domain="[('id', 'in', assigned_employee_ids)]"
+                               options="{'no_create': True}"/>
+                    </group>
+                    <group>
+                        <field name="to_employee_id"
+                               string="Transfer To"
+                               domain="[('id', '!=', from_employee_id)]"
+                               options="{'no_create': True}"/>
+                    </group>
+                </group>
+                <group>
+                    <field name="reason" nolabel="1"
+                           placeholder="Optional - why is this task being transferred? e.g. &quot;Employee is absent today.&quot;"/>
+                </group>
+                <footer>
+                    <button name="action_transfer" type="object"
+                            string="Transfer" class="btn-primary"
+                            confirm="Transfer this task to the selected employee?"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+</odoo>

@@ -1,0 +1,222 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ================================================================
+         Form view: add a new notebook page "Service Task Management".
+         Using a new page (rather than splicing into existing groups)
+         keeps this change low-risk against other customizations
+         already present on the task form, including the existing
+         Task Code field, which is not touched here.
+         ================================================================ -->
+    <record id="view_task_form2_service_management" model="ir.ui.view">
+        <field name="name">project.task.form.service.management</field>
+        <field name="model">project.task</field>
+        <field name="inherit_id" ref="project.view_task_form2"/>
+        <field name="arch" type="xml">
+            <!-- PART 4: Start / Pause / Resume buttons for the logged-in
+                 employee. Visibility is driven by the non-stored
+                 my_work_session_state field (server-validated again
+                 inside each action - this is UX only, not security). -->
+            <xpath expr="//header" position="inside">
+                <button name="action_start_work" type="object"
+                        string="Start" class="btn-primary"
+                        invisible="my_work_session_state != 'none'"/>
+                <button name="action_pause_work" type="object"
+                        string="Pause" class="btn-warning"
+                        invisible="my_work_session_state != 'running'"/>
+                <button name="action_resume_work" type="object"
+                        string="Resume" class="btn-primary"
+                        invisible="my_work_session_state != 'paused'"/>
+                <!-- PART 6: employee submission + manager verification.
+                     Same pattern: invisible drives UI only, every
+                     action method re-validates independently server
+                     side (see _check_can_verify_or_raise and the
+                     checks at the top of action_submit_for_verification). -->
+                <button name="action_submit_for_verification" type="object"
+                        string="Done" class="btn-primary"
+                        invisible="not can_submit_for_verification"/>
+                <button name="action_approve_task" type="object"
+                        string="Approve" class="btn-primary"
+                        invisible="not can_verify"
+                        confirm="Approve this task? This will mark it as finally completed."/>
+                <button name="action_reject_task" type="object"
+                        string="Reject" class="btn-secondary"
+                        invisible="not can_verify"/>
+                <!-- PART 7: manager-initiated transfer. Opens a wizard
+                     (target=new) rather than acting directly, since the
+                     manager must pick from/to employee + reason. -->
+                <button name="action_transfer_task" type="object"
+                        string="Transfer Task" class="btn-secondary"
+                        invisible="not can_transfer_task"/>
+                <!-- PART 10, item 32: clear, prominent status indicator
+                     at the top of the form, not buried in a tab.
+                     clickable="0" - transitions only happen through
+                     the buttons above/the Approve-Reject-Done actions,
+                     never by clicking directly on the bar. No new
+                     status field - this is the same verification_status
+                     used everywhere else in the module. -->
+                <field name="verification_status" widget="statusbar" clickable="0"/>
+            </xpath>
+            <xpath expr="//notebook" position="inside">
+                <page string="Service Task Management" name="service_task_management">
+                    <group>
+                        <group>
+                            <field name="estimated_time" widget="float_time"/>
+                            <field name="verification_status" readonly="1"/>
+                        </group>
+                    </group>
+                    <separator string="Billing"/>
+                    <group>
+                        <group>
+                            <field name="is_billable"/>
+                            <field name="billing_mode"/>
+                            <field name="hourly_rate"
+                                   invisible="billing_mode != 'hourly' or not is_billable"/>
+                            <field name="task_fixed_price"
+                                   invisible="billing_mode != 'task' or not is_billable"/>
+                            <field name="currency_id" invisible="1"/>
+                        </group>
+                        <group>
+                            <field name="billable_hours" widget="float_time"
+                                   invisible="not is_billable or billing_mode != 'hourly'"/>
+                            <field name="billable_amount"
+                                   invisible="not is_billable"/>
+                        </group>
+                    </group>
+                    <separator string="Employee Remarks"/>
+                    <group>
+                        <field name="employee_remarks" nolabel="1" placeholder="Explain the work completed, or any delay/problem, before clicking Done..."/>
+                    </group>
+                    <separator string="Manager Remarks"/>
+                    <group>
+                        <field name="manager_remarks" nolabel="1" placeholder="Reason for approval or rejection..."/>
+                    </group>
+                    <group>
+                        <group>
+                            <field name="submitted_by"/>
+                            <field name="verified_by"/>
+                        </group>
+                        <group>
+                            <field name="submitted_on"/>
+                            <field name="verified_on"/>
+                        </group>
+                    </group>
+                </page>
+                <page string="Verification History" name="verification_history">
+                    <field name="verification_history_ids" readonly="1">
+                        <list>
+                            <field name="submitted_by"/>
+                            <field name="submitted_at"/>
+                            <field name="employee_remarks"/>
+                            <field name="verified_by"/>
+                            <field name="verified_at"/>
+                            <field name="manager_remarks"/>
+                            <field name="result" widget="badge"
+                                   decoration-warning="result == 'waiting'"
+                                   decoration-success="result == 'approved'"
+                                   decoration-danger="result == 'rejected'"/>
+                        </list>
+                    </field>
+                </page>
+                <page string="Transfer History" name="transfer_history">
+                    <field name="transfer_history_ids" readonly="1">
+                        <list>
+                            <field name="transferred_at" string="Date"/>
+                            <field name="from_employee_id"/>
+                            <field name="to_employee_id"/>
+                            <field name="transferred_by"/>
+                            <field name="reason"/>
+                        </list>
+                    </field>
+                </page>
+                <page string="Work Sessions" name="work_sessions">
+                    <group>
+                        <group>
+                            <field name="current_employee_id" readonly="1"/>
+                            <field name="my_work_session_state" widget="badge"
+                                   decoration-info="my_work_session_state == 'running'"
+                                   decoration-warning="my_work_session_state == 'paused'"
+                                   decoration-muted="my_work_session_state == 'none'"/>
+                        </group>
+                        <group>
+                            <field name="total_work_session_count"/>
+                            <field name="total_employees_worked"/>
+                        </group>
+                    </group>
+
+                    <separator string="Time Analysis"/>
+                    <group>
+                        <group>
+                            <field name="estimated_time" widget="float_time"/>
+                            <field name="actual_work_hours" widget="float_time"/>
+                            <field name="live_session_note" nolabel="1"
+                                   invisible="not live_session_note"
+                                   class="text-muted"/>
+                        </group>
+                        <group>
+                            <field name="variance_to_finish" widget="float_time"
+                                   decoration-success="variance_to_finish > 0"
+                                   decoration-danger="variance_to_finish &lt; 0"/>
+                            <field name="remaining_estimated_hours" widget="float_time"/>
+                            <field name="overrun_hours" widget="float_time"
+                                   decoration-danger="overrun_hours > 0"/>
+                        </group>
+                    </group>
+
+                    <separator string="Time by Employee"/>
+                    <group>
+                        <field name="employee_time_breakdown" nolabel="1"
+                               invisible="not employee_time_breakdown"/>
+                    </group>
+
+                    <field name="work_session_ids" readonly="1">
+                        <list>
+                            <field name="employee_id"/>
+                            <field name="start_datetime"/>
+                            <field name="end_datetime"/>
+                            <field name="duration" widget="float_time"/>
+                            <field name="state" widget="badge"
+                                   decoration-info="state == 'running'"
+                                   decoration-success="state == 'completed'"
+                                   decoration-warning="state == 'paused'"
+                                   decoration-muted="state in ('transferred', 'cancelled')"/>
+                        </list>
+                    </field>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- ================================================================
+         Tree/list view: append columns for Estimated Time, Verification
+         Status, Billing Mode, and the Part 5 time-analysis columns.
+         Existing columns are left untouched. This reuses the same
+         inherit_id/anchor field (stage_id) that already worked without
+         issue in Parts 2-4, so it carries the same low install risk.
+         ================================================================ -->
+    <record id="view_task_tree2_service_management" model="ir.ui.view">
+        <field name="name">project.task.tree.service.management</field>
+        <field name="model">project.task</field>
+        <field name="inherit_id" ref="project.view_task_tree2"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='stage_id']" position="after">
+                <field name="estimated_time" widget="float_time" optional="show"/>
+                <field name="actual_work_hours" widget="float_time" optional="show"/>
+                <field name="variance_to_finish" widget="float_time" optional="show"
+                       decoration-success="variance_to_finish > 0"
+                       decoration-danger="variance_to_finish &lt; 0"/>
+                <field name="remaining_estimated_hours" widget="float_time" optional="hide"/>
+                <field name="overrun_hours" widget="float_time" optional="hide"
+                       decoration-danger="overrun_hours > 0"/>
+                <field name="verification_status" optional="show"/>
+                <field name="is_billable" optional="show" string="Billable"/>
+                <field name="billing_mode" optional="hide"/>
+                <field name="hourly_rate" optional="hide"/>
+                <field name="task_fixed_price" optional="hide"/>
+                <field name="billable_hours" widget="float_time" optional="hide" string="Actual Billable Hours"/>
+                <field name="billable_amount" optional="show"/>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>
